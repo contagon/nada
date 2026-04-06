@@ -1,6 +1,6 @@
 """Type tests for combined Option and Result types using assert_type.
 
-Tests types that inherit from both SomeBase and OkBase, allowing them
+Tests types that inherit from both IsSome and IsOk, allowing them
 to be used in both Option and Result contexts.
 """
 
@@ -8,7 +8,7 @@ to be used in both Option and Result contexts.
 from typing import assert_type, Literal
 from dataclasses import dataclass
 
-from nada.base import (
+from nada import (
     Option,
     Result,
     Nada,
@@ -17,21 +17,21 @@ from nada.base import (
     is_none,
     is_ok,
     is_err,
-    SomeBase,
-    OkBase,
-    ErrBase,
+    IsSome,
+    IsOk,
+    IsErr,
 )
 
 
 # ----------------------- Combined Type Definition ----------------------- #
 @dataclass
-class Data(SomeBase, OkBase):
+class Data(IsSome, IsOk):
     """A type that can be used as both Option and Result Ok value."""
 
     value: int
 
 
-class DataErr(SomeBase, ErrBase):
+class DataErr(IsSome, IsErr):
     """Error type for Data results."""
 
     message: str
@@ -139,9 +139,9 @@ def test_combined_type_option_methods() -> None:
 
 
 def test_combined_type_result_methods() -> None:
-    """Test Result methods work on combined type (same as Option for OkBase)."""
+    """Test Result methods work on combined type (same as Option for IsOk)."""
     d = Data(value=5)
-    # OkBase provides these methods that return Self
+    # IsOk provides these methods that return Self
     assert_type(d.unwrap(), Data)
     assert_type(d.expect("error"), Data)
 
@@ -186,7 +186,7 @@ def test_nada_unwrap_or_with_combined_type() -> None:
 
 
 def test_err_unwrap_or_with_combined_type() -> None:
-    """Test ErrBase.unwrap_or returns the combined type default."""
+    """Test IsErr.unwrap_or returns the combined type default."""
     e = DataErr(message="error")
     result = e.unwrap_or(DataErr(message="warning"))
     assert_type(result, DataErr)

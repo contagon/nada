@@ -4,14 +4,14 @@
 from typing import assert_type, Literal
 from dataclasses import dataclass
 
-from nada.base import (
+from nada import (
     Result,
     Ok,
     Err,
     is_ok,
     is_err,
-    OkBase,
-    ErrBase,
+    IsOk,
+    IsErr,
 )
 
 
@@ -163,23 +163,23 @@ def test_err_with_custom_exception() -> None:
         assert_type(x.err, CustomError)
 
 
-# ----------------------- OkBase and ErrBase Inheritance ----------------------- #
+# ----------------------- IsOk and IsErr Inheritance ----------------------- #
 @dataclass
-class CustomOk(OkBase):
-    """Custom Ok type inheriting from OkBase."""
+class CustomOk(IsOk):
+    """Custom Ok type inheriting from IsOk."""
 
     value: int
 
 
 @dataclass
-class CustomErr(ErrBase):
-    """Custom Err type inheriting from ErrBase."""
+class CustomErr(IsErr):
+    """Custom Err type inheriting from IsErr."""
 
     message: str
 
 
-def test_okbase_errbase_inheritance() -> None:
-    """Test custom types inheriting OkBase/ErrBase work with Result."""
+def test_IsOk_IsErr_inheritance() -> None:
+    """Test custom types inheriting IsOk/IsErr work with Result."""
 
     def get_custom() -> Result[CustomOk, CustomErr]:
         return CustomOk(value=5)
@@ -188,8 +188,8 @@ def test_okbase_errbase_inheritance() -> None:
     assert_type(x, CustomOk | CustomErr)
 
 
-def test_okbase_narrowing_with_is_ok() -> None:
-    """Test is_ok narrows to custom OkBase type."""
+def test_IsOk_narrowing_with_is_ok() -> None:
+    """Test is_ok narrows to custom IsOk type."""
 
     def get_custom() -> Result[CustomOk, CustomErr]:
         return CustomOk(value=5)
@@ -199,8 +199,8 @@ def test_okbase_narrowing_with_is_ok() -> None:
         assert_type(x, CustomOk)
 
 
-def test_errbase_narrowing_with_is_err() -> None:
-    """Test is_err narrows to custom ErrBase type."""
+def test_IsErr_narrowing_with_is_err() -> None:
+    """Test is_err narrows to custom IsErr type."""
 
     def get_custom() -> Result[CustomOk, CustomErr]:
         return CustomErr(message="error")
@@ -210,8 +210,8 @@ def test_errbase_narrowing_with_is_err() -> None:
         assert_type(x, CustomErr)
 
 
-def test_okbase_narrowing_with_property() -> None:
-    """Test .is_ok property narrows to custom OkBase type."""
+def test_IsOk_narrowing_with_property() -> None:
+    """Test .is_ok property narrows to custom IsOk type."""
 
     def get_custom() -> Result[CustomOk, CustomErr]:
         return CustomOk(value=5)
@@ -221,8 +221,8 @@ def test_okbase_narrowing_with_property() -> None:
         assert_type(x, CustomOk)
 
 
-def test_errbase_narrowing_with_property() -> None:
-    """Test .is_err property narrows to custom ErrBase type."""
+def test_IsErr_narrowing_with_property() -> None:
+    """Test .is_err property narrows to custom IsErr type."""
 
     def get_custom() -> Result[CustomOk, CustomErr]:
         return CustomErr(message="error")
@@ -232,16 +232,16 @@ def test_errbase_narrowing_with_property() -> None:
         assert_type(x, CustomErr)
 
 
-def test_okbase_methods() -> None:
-    """Test OkBase methods return Self."""
+def test_IsOk_methods() -> None:
+    """Test IsOk methods return Self."""
     c = CustomOk(value=5)
     assert_type(c.unwrap(), CustomOk)
     assert_type(c.expect("error"), CustomOk)
     assert_type(c.unwrap_or(CustomOk(value=0)), CustomOk)
 
 
-def test_errbase_unwrap_or() -> None:
-    """Test ErrBase.unwrap_or returns the default."""
+def test_IsErr_unwrap_or() -> None:
+    """Test IsErr.unwrap_or returns the default."""
     c = CustomErr(message="error")
     result = c.unwrap_or(42)
     assert_type(result, int)

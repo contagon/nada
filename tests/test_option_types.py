@@ -4,14 +4,14 @@
 from typing import assert_type, Literal
 from dataclasses import dataclass
 
-from nada.base import (
+from nada import (
     Option,
     Some,
     Nada,
     NadaType,
     is_some,
     is_none,
-    SomeBase,
+    IsSome,
 )
 
 
@@ -139,16 +139,16 @@ def test_match_narrows_some() -> None:
             assert_type(x, NadaType)
 
 
-# ----------------------- SomeBase Inheritance ----------------------- #
+# ----------------------- IsSome Inheritance ----------------------- #
 @dataclass
-class CustomOption(SomeBase):
-    """Custom option type inheriting from SomeBase."""
+class CustomOption(IsSome):
+    """Custom option type inheriting from IsSome."""
 
     value: str
 
 
-def test_somebase_inheritance() -> None:
-    """Test custom types inheriting SomeBase work with Option."""
+def test_IsSome_inheritance() -> None:
+    """Test custom types inheriting IsSome work with Option."""
 
     def get_custom() -> Option[CustomOption]:
         return Nada
@@ -157,8 +157,8 @@ def test_somebase_inheritance() -> None:
     assert_type(x, CustomOption | NadaType)
 
 
-def test_somebase_narrowing_with_is_some() -> None:
-    """Test is_some narrows to custom SomeBase type."""
+def test_IsSome_narrowing_with_is_some() -> None:
+    """Test is_some narrows to custom IsSome type."""
 
     def get_custom() -> Option[CustomOption]:
         return CustomOption(value="test")
@@ -168,8 +168,8 @@ def test_somebase_narrowing_with_is_some() -> None:
         assert_type(x, CustomOption)
 
 
-def test_somebase_narrowing_with_property() -> None:
-    """Test .is_some property narrows to custom SomeBase type."""
+def test_IsSome_narrowing_with_property() -> None:
+    """Test .is_some property narrows to custom IsSome type."""
 
     def get_custom() -> Option[CustomOption]:
         return CustomOption(value="test")
@@ -179,8 +179,8 @@ def test_somebase_narrowing_with_property() -> None:
         assert_type(x, CustomOption)
 
 
-def test_somebase_methods() -> None:
-    """Test SomeBase methods return Self."""
+def test_IsSome_methods() -> None:
+    """Test IsSome methods return Self."""
     c = CustomOption(value="test")
     assert_type(c.unwrap(), CustomOption)
     assert_type(c.expect("error"), CustomOption)
