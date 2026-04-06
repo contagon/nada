@@ -1,81 +1,108 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import (
-    Final,
     Literal,
     Never,
-    Protocol,
     Self,
     final,
+    override,
     reveal_type,
     Any,
 )
 from typing_extensions import TypeIs
+from abc import ABC, abstractmethod
 
 
-class Optionable[T](Protocol):
+class Optionable[T](ABC):
     @property
+    @abstractmethod
     def is_some(self) -> bool: ...
 
     @property
+    @abstractmethod
     def is_none(self) -> bool: ...
 
+    @abstractmethod
     def expect(self, msg: str) -> T: ...
 
+    @abstractmethod
     def unwrap(self) -> T: ...
 
+    @abstractmethod
     def unwrap_or(self, default: T) -> T: ...
 
 
 @final
-class Some[T]:
+class Some[T](Optionable[T]):
     def __init__(self, val: T) -> None:
         self.val = val
-        # Had to move these here to avoid pyright interpreting them as class variables 
-        # which is a mismatch with the Protocol
-        # Alternative options which aren't yet available:
-        # 1. Make the Protocol have readonly class properties. Requires metaclass or ReadOnly
-        self.is_some: Final[Literal[True]] = True
-        self.is_none: Final[Literal[False]] = False
 
-    def expect(self, msg: str) -> Self:
-        return self
+    @property
+    @override
+    def is_some(self) -> Literal[True]:
+        return True
 
+    @property
+    @override
+    def is_none(self) -> Literal[False]:
+        return False
+
+    @override
+    def expect(self, msg: str) -> T:
+        return self.val
+
+    @override
     def unwrap(self) -> T:
         return self.val
 
+    @override
     def unwrap_or(self, default: T) -> T:
         return self.val
 
 
-class SomeBase:
-    # Not sure why these work here, but not in Some
-    is_some: Final[Literal[True]] = True
-    is_none: Final[Literal[False]] = False
+class SomeBase(Optionable["SomeBase"]):
+    @property
+    @override
+    def is_some(self) -> Literal[True]:
+        return True
 
+    @property
+    @override
+    def is_none(self) -> Literal[False]:
+        return False
+
+    @override
     def expect(self, msg: str) -> Self:
         return self
 
+    @override
     def unwrap(self) -> Self:
         return self
 
+    @override
     def unwrap_or(self, default: Self) -> Self:
         return self
 
 
+class NothingType(Optionable[None]):
+    @property
+    @override
+    def is_some(self) -> Literal[False]:
+        return False
 
+    @property
+    @override
+    def is_none(self) -> Literal[True]:
+        return True
 
-class NothingType:
-    is_some: Final[Literal[False]] = False
-    is_none: Final[Literal[True]] = True
-
+    @override
     def expect(self, msg: str) -> Never:
         raise ValueError(msg)
 
+    @override
     def unwrap(self) -> Never:
         raise ValueError("Unwrapped a None")
 
+    @override
     def unwrap_or[T](self, default: T) -> T:
         return default
 
@@ -110,7 +137,7 @@ def make_test() -> Option[Test]:
 x = my_test()
 t = make_test()
 
-# m = my_test().unwrap_or(Test(5))
+m = make_test().unwrap_or(Test(5))
 
 if is_some(t):
     reveal_type(t)

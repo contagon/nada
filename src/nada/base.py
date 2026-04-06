@@ -1,70 +1,98 @@
-from typing import Any, Final, Literal, Protocol, Self, final
+from typing import Any, Literal, Never, Self, final, override
+from abc import ABC, abstractmethod
 
 from typing_extensions import TypeIs
 
 
 # ------------------------- Protocol Definitions ------------------------- #
-class Optionable[T](Protocol):
+class Optionable[T](ABC):
     @property
+    @abstractmethod
     def is_some(self) -> bool: ...
 
     @property
+    @abstractmethod
     def is_none(self) -> bool: ...
 
+    @abstractmethod
     def expect(self, msg: str) -> T: ...
 
+    @abstractmethod
     def unwrap(self) -> T: ...
 
+    @abstractmethod
     def unwrap_or(self, default: T) -> T: ...
 
 
-class Resultable[T](Protocol):
+class Resultable[T](ABC):
     @property
+    @abstractmethod
     def is_ok(self) -> bool: ...
 
     @property
+    @abstractmethod
     def is_err(self) -> bool: ...
 
+    @abstractmethod
     def expect(self, msg: str) -> T: ...
 
+    @abstractmethod
     def unwrap(self) -> T: ...
 
+    @abstractmethod
     def unwrap_or(self, default: T) -> T: ...
 
 
 # ------------------------- Option Implementations ------------------------- #
-class NadaType:
-    is_some: Final[Literal[False]] = False
-    is_none: Final[Literal[True]] = True
+class NadaType(Optionable[None]):
+    @property
+    @override
+    def is_some(self) -> Literal[False]:
+        return False
 
+    @property
+    @override
+    def is_none(self) -> Literal[True]:
+        return True
+
+    @override
     def expect(self, msg: str) -> None:
         raise ValueError(msg)
 
+    @override
     def unwrap(self) -> None:
         raise ValueError("Called unwrap on a Nada")
 
+    @override
     def unwrap_or[T](self, default: T) -> T:
         return default
 
 
 @final
-class Some[T]:
+class Some[T](Optionable[T]):
     def __init__(self, val: T) -> None:
         self.val = val
-        # Had to move these here to avoid pyright interpreting them as class variables 
-        # which is a mismatch with the Protocol
-        # Alternative options which aren't yet available:
-        # 1. Make the Protocol have readonly class properties. Requires metaclass or ReadOnly
-        self.is_some: Final[Literal[True]] = True
-        self.is_none: Final[Literal[False]] = False
 
-    def expect(self, msg: str) -> Self: # pyright: ignore[reportUnusedParameter]
-        return self
+    @property
+    @override
+    def is_some(self) -> Literal[True]:
+        return True
 
+    @property
+    @override
+    def is_none(self) -> Literal[False]:
+        return False
+
+    @override
+    def expect(self, msg: str) -> T:
+        return self.val
+
+    @override
     def unwrap(self) -> T:
         return self.val
 
-    def unwrap_or(self, default: T) -> T: # pyright: ignore[reportUnusedParameter]
+    @override
+    def unwrap_or(self, default: T) -> T:
         return self.val
 
 
@@ -83,35 +111,57 @@ def is_none[T: Optionable[Any]](x: Option[T]) -> TypeIs[NadaType]:
 
 # ------------------------- Result Implementations ------------------------- #
 @final
-class Ok[T]:
+class Ok[T](Resultable[T]):
     def __init__(self, val: T) -> None:
-        self.is_ok: Final[Literal[True]] = True
-        self.is_err: Final[Literal[False]] = False
         self.val = val
 
-    def expect(self, msg: str) -> T: # pyright: ignore[reportUnusedParameter]
+    @property
+    @override
+    def is_ok(self) -> Literal[True]:
+        return True
+
+    @property
+    @override
+    def is_err(self) -> Literal[False]:
+        return False
+
+    @override
+    def expect(self, msg: str) -> T:
         return self.val
 
+    @override
     def unwrap(self) -> T:
         return self.val
 
-    def unwrap_or(self, default: T) -> T: # pyright: ignore[reportUnusedParameter]
+    @override
+    def unwrap_or(self, default: T) -> T:
         return self.val
 
 
 @final
-class Err[E: Exception]:
+class Err[E: Exception](Resultable[E]):
     def __init__(self, err: E) -> None:
-        self.is_ok: Final[Literal[False]] = False
-        self.is_err: Final[Literal[True]] = True
         self.err = err
 
-    def expect(self, msg: str) -> None:
+    @property
+    @override
+    def is_ok(self) -> Literal[False]:
+        return False
+
+    @property
+    @override
+    def is_err(self) -> Literal[True]:
+        return True
+
+    @override
+    def expect(self, msg: str) -> Never:
         raise ValueError(msg)
 
-    def unwrap(self) -> None:
+    @override
+    def unwrap(self) -> Never:
         raise ValueError("Called unwrap on an Err")
 
+    @override
     def unwrap_or[T](self, default: T) -> T:
         return default
 
@@ -128,33 +178,60 @@ def is_err[T: Resultable[Any], E: Resultable[Any]](x: Result[T, E]) -> TypeIs[E]
 
 
 # ------------------------- For Inheritance ------------------------- #
-class NadaBase:
-    is_some: Final[Literal[True]] = True
-    is_none: Final[Literal[False]] = False
+class NadaBase(Optionable["NadaBase"], Resultable["NadaBase"]):
+    @property
+    @override
+    def is_some(self) -> Literal[True]:
+        return True
 
-    is_ok: Final[Literal[True]] = True
-    is_err: Final[Literal[False]] = False
+    @property
+    @override
+    def is_none(self) -> Literal[False]:
+        return False
 
-    def expect(self, msg: str) -> Self: # pyright: ignore[reportUnusedParameter]
+    @property
+    @override
+    def is_ok(self) -> Literal[True]:
+        return True
+
+    @property
+    @override
+    def is_err(self) -> Literal[False]:
+        return False
+
+    @override
+    def expect(self, msg: str) -> Self:
         return self
 
+    @override
     def unwrap(self) -> Self:
         return self
 
-    def unwrap_or(self, default: Self) -> Self: # pyright: ignore[reportUnusedParameter]
+    @override
+    def unwrap_or(self, default: Self) -> Self:
         return self
 
 
-class ErrBase(Exception):
-    is_ok: Final[Literal[False]] = False
-    is_err: Final[Literal[True]] = True
+class ErrBase(Exception, Resultable["ErrBase"]):
+    @property
+    @override
+    def is_ok(self) -> Literal[False]:
+        return False
 
+    @property
+    @override
+    def is_err(self) -> Literal[True]:
+        return True
+
+    @override
     def expect(self, msg: str) -> Self:
         raise ValueError(msg)
 
+    @override
     def unwrap(self) -> Self:
         raise ValueError("Called unwrap on an Err")
 
+    @override
     def unwrap_or[T](self, default: T) -> T:
         return default
 
