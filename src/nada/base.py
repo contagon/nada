@@ -43,6 +43,31 @@ class Resultable[T](ABC):
     def unwrap_or(self, default: T) -> T: ...
 
 
+# Have to separate these to disambiguate the is_ok and is_err properties
+class OkResultable[T](Resultable[T], ABC):
+    @property
+    @override
+    def is_ok(self) -> Literal[True]:
+        return True
+
+    @property
+    @override
+    def is_err(self) -> Literal[False]: 
+        return False
+
+
+class ErrResultable[T](Resultable[T], ABC):
+    @property
+    @override
+    def is_ok(self) -> Literal[False]: 
+        return False
+
+    @property
+    @override
+    def is_err(self) -> Literal[True]: 
+        return True
+
+
 # ------------------------- Option Implementations ------------------------- #
 class NadaType(Optionable[None]):
     @property
@@ -111,19 +136,9 @@ def is_none[T: Optionable[Any]](x: Option[T]) -> TypeIs[NadaType]:
 
 # ------------------------- Result Implementations ------------------------- #
 @final
-class Ok[T](Resultable[T]):
+class Ok[T](OkResultable[T]):
     def __init__(self, val: T) -> None:
         self.val = val
-
-    @property
-    @override
-    def is_ok(self) -> Literal[True]:
-        return True
-
-    @property
-    @override
-    def is_err(self) -> Literal[False]:
-        return False
 
     @override
     def expect(self, msg: str) -> T:
@@ -139,19 +154,9 @@ class Ok[T](Resultable[T]):
 
 
 @final
-class Err[E: Exception](Resultable[E]):
+class Err[E: Exception](ErrResultable[E]):
     def __init__(self, err: E) -> None:
         self.err = err
-
-    @property
-    @override
-    def is_ok(self) -> Literal[False]:
-        return False
-
-    @property
-    @override
-    def is_err(self) -> Literal[True]:
-        return True
 
     @override
     def expect(self, msg: str) -> Never:
@@ -166,19 +171,19 @@ class Err[E: Exception](Resultable[E]):
         return default
 
 
-type Result[T: Resultable[Any], E: Resultable[Any]] = T | E
+type Result[T: OkResultable[Any], E: ErrResultable[Any]] = T | E
 
 
-def is_ok[T: Resultable[Any], E: Resultable[Any]](x: Result[T, E]) -> TypeIs[T]:
+def is_ok[T: OkResultable[Any], E: ErrResultable[Any]](x: Result[T, E]) -> TypeIs[T]:
     return x.is_ok
 
 
-def is_err[T: Resultable[Any], E: Resultable[Any]](x: Result[T, E]) -> TypeIs[E]:
+def is_err[T: OkResultable[Any], E: ErrResultable[Any]](x: Result[T, E]) -> TypeIs[E]:
     return x.is_err
 
 
 # ------------------------- For Inheritance ------------------------- #
-class NadaBase(Optionable["NadaBase"], Resultable["NadaBase"]):
+class SomeBase(Optionable["SomeBase"]):
     @property
     @override
     def is_some(self) -> Literal[True]:
@@ -188,6 +193,20 @@ class NadaBase(Optionable["NadaBase"], Resultable["NadaBase"]):
     @override
     def is_none(self) -> Literal[False]:
         return False
+
+    @override
+    def expect(self, msg: str) -> Self:
+        return self
+
+    @override
+    def unwrap(self) -> Self:
+        return self
+
+    @override
+    def unwrap_or(self, default: Self) -> Self:
+        return self
+
+class OkBase(OkResultable["OkBase"]):
 
     @property
     @override
@@ -212,7 +231,7 @@ class NadaBase(Optionable["NadaBase"], Resultable["NadaBase"]):
         return self
 
 
-class ErrBase(Exception, Resultable["ErrBase"]):
+class ErrBase(Exception, ErrResultable["ErrBase"]):
     @property
     @override
     def is_ok(self) -> Literal[False]:
@@ -242,7 +261,7 @@ from typing import reveal_type
 
 
 @dataclass
-class Test(NadaBase):
+class Test(SomeBase, OkBase):
     val: int
 
 
@@ -251,53 +270,53 @@ class TestErr(ErrBase):
     err: str
 
 
-def some_int() -> Option[Some[int]]:
-    return Nada
+if True:
+
+    def some_int() -> Option[Some[int]]:
+        return Nada
+
+    def some_test() -> Option[Test]:
+        # return Test(5)
+        return Nada
+
+    x = some_int()
+    t = some_test()
+
+    m = some_test().unwrap_or(Test(5))
+
+    if is_some(t):
+        reveal_type(t)
+
+    if t.is_some is True:
+        reveal_type(t)
+
+    match x:
+        case Some(val=v):
+            reveal_type(x)
+        case NadaType():
+            reveal_type(x)
 
 
-def some_test() -> Option[Test]:
-    # return Test(5)
-    return Nada
+if True:
 
+    def result_int() -> Result[Ok[int], Err[ValueError]]:
+        return Err(ValueError("An error occurred"))
 
-x = some_int()
-t = some_test()
+    def result_test() -> Result[Test, TestErr]:
+        # return Ok(Test(5))
+        return TestErr("An error occurred")
 
-m = some_test().unwrap_or(Test(5))
+    x = result_int()
+    t = result_test()
 
-if is_some(t):
-    reveal_type(t)
+    if is_ok(t):
+        reveal_type(t)
 
-if t.is_some is True:
-    reveal_type(t)
+    if t.is_ok is True:
+        reveal_type(t)
 
-match x:
-    case Some(val=v):
-        reveal_type(x)
-    case NadaType():
-        reveal_type(x)
-
-
-def result_int() -> Result[Ok[int], Err[ValueError]]:
-    return Err(ValueError("An error occurred"))
-
-
-def result_test() -> Result[Test, TestErr]:
-    # return Ok(Test(5))
-    return TestErr("An error occurred")
-
-
-x = result_int()
-t = result_test()
-
-if is_ok(t):
-    reveal_type(t)
-
-if t.is_ok is True:
-    reveal_type(t)
-
-match x:
-    case Ok(val=v):
-        reveal_type(x)
-    case Err(err=e):
-        reveal_type(x)
+    match x:
+        case Ok(val=v):
+            reveal_type(x)
+        case Err(err=e):
+            reveal_type(x)
