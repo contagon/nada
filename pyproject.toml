@@ -15,9 +15,11 @@ build-backend = "uv_build"
 
 [tool.basedpyright]
 pythonVersion = "3.12"
+include = ["python", "tests"]
 
 [dependency-groups]
 dev = [
     "basedpyright>=1.39.0",
+    "pytest>=9.0.2",
+    "ruff>=0.15.9",
 ]
-# reportIncompatibleVariableOverride = "hint"

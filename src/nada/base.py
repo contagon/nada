@@ -52,19 +52,19 @@ class OkResultable[T](Resultable[T], ABC):
 
     @property
     @override
-    def is_err(self) -> Literal[False]: 
+    def is_err(self) -> Literal[False]:
         return False
 
 
 class ErrResultable[T](Resultable[T], ABC):
     @property
     @override
-    def is_ok(self) -> Literal[False]: 
+    def is_ok(self) -> Literal[False]:
         return False
 
     @property
     @override
-    def is_err(self) -> Literal[True]: 
+    def is_err(self) -> Literal[True]:
         return True
 
 
@@ -206,8 +206,8 @@ class SomeBase(Optionable["SomeBase"]):
     def unwrap_or(self, default: Self) -> Self:
         return self
 
-class OkBase(OkResultable["OkBase"]):
 
+class OkBase(OkResultable["OkBase"]):
     @property
     @override
     def is_ok(self) -> Literal[True]:
@@ -253,70 +253,3 @@ class ErrBase(Exception, ErrResultable["ErrBase"]):
     @override
     def unwrap_or[T](self, default: T) -> T:
         return default
-
-
-# ------------------------- Test things ------------------------- #
-from dataclasses import dataclass
-from typing import reveal_type
-
-
-@dataclass
-class Test(SomeBase, OkBase):
-    val: int
-
-
-@dataclass
-class TestErr(ErrBase):
-    err: str
-
-
-if True:
-
-    def some_int() -> Option[Some[int]]:
-        return Nada
-
-    def some_test() -> Option[Test]:
-        # return Test(5)
-        return Nada
-
-    x = some_int()
-    t = some_test()
-
-    m = some_test().unwrap_or(Test(5))
-
-    if is_some(t):
-        reveal_type(t)
-
-    if t.is_some is True:
-        reveal_type(t)
-
-    match x:
-        case Some(val=v):
-            reveal_type(x)
-        case NadaType():
-            reveal_type(x)
-
-
-if True:
-
-    def result_int() -> Result[Ok[int], Err[ValueError]]:
-        return Err(ValueError("An error occurred"))
-
-    def result_test() -> Result[Test, TestErr]:
-        # return Ok(Test(5))
-        return TestErr("An error occurred")
-
-    x = result_int()
-    t = result_test()
-
-    if is_ok(t):
-        reveal_type(t)
-
-    if t.is_ok is True:
-        reveal_type(t)
-
-    match x:
-        case Ok(val=v):
-            reveal_type(x)
-        case Err(err=e):
-            reveal_type(x)
