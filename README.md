@@ -7,8 +7,8 @@ In constrast to other similar python libraries, nada's `Option` and `Result` typ
 ## Installation
 
 ```bash
-pip install nada
-uv add nada
+pip install nada-types
+uv add nada-types
 ```
 
 Requires Python 3.12 or later.
