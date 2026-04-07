@@ -6,7 +6,7 @@
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
       "extra-files": [
-        "python/nada/__init__.py"
+        "src/nada/__init__.py"
       ]
     }
   },
